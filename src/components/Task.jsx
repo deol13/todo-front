@@ -65,17 +65,36 @@ const Task = () => {
 
 
 
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
-        const date = new Date().toLocaleString("sv-SE");
-        data.createdAt = date;
-        data.updatedAt = date;
+        const localISO = new Date().toLocaleString('sv-SE', { hour12: false }).replace(' ', 'T');
+        data.createdAt = localISO;
+        data.updatedAt = localISO;
         data.numberOfAttachments = data.numberOfAttachments.length;
 
         console.log(data);
+
+        try{
+            const response = await axios.post(apiEndpoint, data, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.status === 201) {
+                reset();
+                console.log("Todo task created successfully");
+                fetchAllTodoTask();
+            }
+        } catch (error) {
+            console.log("Error creating todo task;", error)
+        }
     }
 
-
+    // Used to remove time from dates.
+    const removeTime = (date) => {
+        let dateTime = date.split('T');
+        return dateTime[0];
+    }
 
 
     // todo*: make this component functional by implementing state management and API calls
@@ -186,12 +205,12 @@ const Task = () => {
                                                     <div className="flex-grow-1">
                                                         <div className="d-flex justify-content-between">
                                                             <h6 className="mb-1">{todo.title}</h6>
-                                                            <small className="text-muted ms-2">Created: {todo.createdAt}</small>
+                                                            <small className="text-muted ms-2">Created: {removeTime(todo.createdAt)}</small>
                                                         </div>
                                                         <p className="mb-1 text-muted small">{todo.description}s</p>
                                                         <div className="d-flex align-items-center flex-wrap">
                                                             <small className="text-muted me-2">
-                                                                <i className="bi bi-calendar-event"></i> {todo.dueDate}
+                                                                <i className="bi bi-calendar-event"></i> {removeTime(todo.dueDate)}
                                                             </small>
                                                             <span className="badge bg-info me-2">
                                                                 <i className="bi bi-person"></i> Mehrdad Javan
