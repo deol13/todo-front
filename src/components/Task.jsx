@@ -27,7 +27,6 @@ const Task = () => {
     });
 
     const { token } = useAuth();
-    // Store todo's
     const [todoTasks, setTodoTasks] = useState([]);
 
     // On refresh and when an array is changed this useEffect is called.
@@ -60,11 +59,6 @@ const Task = () => {
         console.log("### finished fetching todo tasks.");
     };
 
-
-
-
-
-
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
         const localISO = new Date().toLocaleString('sv-SE', { hour12: false }).replace(' ', 'T');
@@ -95,9 +89,6 @@ const Task = () => {
         let dateTime = date.split('T');
         return dateTime[0];
     }
-
-
-    // todo*: make this component functional by implementing state management and API calls
 
     return (
         <div className="dashboard-layout">
@@ -213,7 +204,7 @@ const Task = () => {
                                                                 <i className="bi bi-calendar-event"></i> {removeTime(todo.dueDate)}
                                                             </small>
                                                             <span className="badge bg-info me-2">
-                                                                <i className="bi bi-person"></i> Mehrdad Javan
+                                                                <i className="bi bi-person"></i> {todo.personId === 1 ? "Mehrdad Javan" : "Simon Elbrink"}
                                                             </span>
                                                             <span className="badge bg-warning text-dark me-2">{todo.completed}</span>
                                                         </div>
