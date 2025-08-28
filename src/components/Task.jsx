@@ -92,6 +92,25 @@ const Task = () => {
         return dateTime[0];
     }
 
+    
+    //sort by dueDate, Memo will only recompute the memorized value when one of the depoendencies has changed. 
+    const sortByDate = useMemo(() => {
+        console.log("Sort");
+        if(sortByEarliest)
+            todoTasks.sort((a, b) => a.dueDate > b.dueDate ? 1 : -1 );
+        else
+            todoTasks.sort((a, b) => a.dueDate > b.dueDate ? -1 : 1 );
+    }, [todoTasks, sortByEarliest])
+    
+    const changeSort = () => {
+        console.log("Change sort");
+        setSortByEarliest(sortByEarliest === true ? false : true);
+    }
+    
+    //TODO: filter, ändra till en select element med valen: ingen filtering, overdue, personid = 1, personid = 2 ..., in progress, complete.
+    // Sen ha en switch som onSubmit och useEffect kaller, den kollar en variable och kallar  apin som matchar filter valet
+
+
     return (
         <div className="dashboard-layout">
             <Sidebar isOpen={false} onClose={() => {}} />
@@ -185,7 +204,7 @@ const Task = () => {
                                         <button className="btn btn-outline-secondary btn-sm" title="Filter">
                                             <i className="bi bi-funnel"></i>
                                         </button>
-                                        <button className="btn btn-outline-secondary btn-sm" title="Sort">
+                                        <button className="btn btn-outline-secondary btn-sm" title="Sort" onClick={changeSort}>
                                             <i className="bi bi-sort-down"></i>
                                         </button>
                                     </div>
