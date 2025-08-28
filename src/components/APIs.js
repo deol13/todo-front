@@ -1,0 +1,1 @@
+export const todoAPIEndpoint = "http://localhost:9090/api/todo";
