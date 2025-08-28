@@ -1,10 +1,37 @@
-
 import React from 'react';
 import './Task.css';
 import Sidebar from './Sidebar';
 import Header from "./Header.jsx";
+import { useForm } from "react-hook-form"
 
 const Task = () => {
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: {errors},
+    } = useForm({
+        defaultValues: {
+        title: "",
+        description: "",
+        completed: "false",
+        createdAt: "",
+        updatedAt: "",
+        dueDate: "",
+        personId: "",
+        numberOfAttachments: "",
+        },
+  });
+
+    const onSubmit = (data) => {
+
+        const date = new Date().toLocaleString("sv-SE");
+        data.createdAt = date;
+        data.updatedAt = date;
+        data.numberOfAttachments = data.numberOfAttachments.length;
+
+        console.log(data);
+    }
 
     // todo*: make this component functional by implementing state management and API calls
 
@@ -24,23 +51,49 @@ const Task = () => {
                             <div className="card shadow-sm task-form-section">
                                 <div className="card-body">
                                     <h2 className="card-title mb-4">Add New Task</h2>
-                                    <form id="todoForm">
+                                    <form id="todoForm" onSubmit={handleSubmit(onSubmit)}>
                                         <div className="mb-3">
                                             <label htmlFor="todoTitle" className="form-label">Title</label>
-                                            <input type="text" className="form-control" id="todoTitle" required />
+                                            <input type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`} id="todoTitle"
+                                            {...register("title", {
+                                                required: "Title is required!",
+                                                minLength: {
+                                                    value: 2,
+                                                    message: "Title must be at leasty 2 characters"
+                                                },
+                                                maxLength: {
+                                                    value: 100,
+                                                    message: "Title can't be more than 100 characters",
+                                                },
+                                            })} />
+                                            {errors.title && (
+                                                <div className="invalid-feedback">{errors.title.message}</div>
+                                            )}
                                         </div>
                                         <div className="mb-3">
                                             <label htmlFor="todoDescription" className="form-label">Description</label>
-                                            <textarea className="form-control" id="todoDescription" rows="3"></textarea>
+                                            <textarea className={`form-control ${errors.description ? "is-invalid" : ""}`} id="todoDescription" rows="3"
+                                            {...register("description", {
+                                                maxLength: {
+                                                    value: 500,
+                                                    message: "Description can't be more than 500 characters"
+                                                }
+                                            })}
+                                            ></textarea>
+                                            {errors.description && (
+                                                <div className="invalid-feedback">{errors.description.message}</div>
+                                            )}
                                         </div>
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
                                                 <label htmlFor="todoDueDate" className="form-label">Due Date</label>
-                                                <input type="datetime-local" className="form-control" id="todoDueDate" />
+                                                <input type="datetime-local" className="form-control" id="todoDueDate" 
+                                                {...register("dueDate")}/>
                                             </div>
                                             <div className="col-md-6 mb-3">
                                                 <label htmlFor="todoPerson" className="form-label">Assign to Person</label>
-                                                <select className="form-select" id="todoPerson">
+                                                <select className="form-select" id="todoPerson"
+                                                {...register("personId")}>
                                                     <option value="">-- Select Person (Optional) --</option>
                                                     <option value="1">Mehrdad Javan</option>
                                                     <option value="2">Simon Elbrink</option>
@@ -50,7 +103,8 @@ const Task = () => {
                                         <div className="mb-3">
                                             <label className="form-label">Attachments</label>
                                             <div className="input-group mb-3">
-                                                <input type="file" className="form-control" id="todoAttachments" multiple />
+                                                <input type="file" className="form-control" id="todoAttachments" multiple 
+                                                {...register("numberOfAttachments")}/>
                                                 <button className="btn btn-outline-secondary" type="button">
                                                     <i className="bi bi-x-lg"></i>
                                                 </button>
