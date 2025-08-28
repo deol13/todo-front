@@ -206,7 +206,9 @@ const Task = () => {
                                                             <span className="badge bg-info me-2">
                                                                 <i className="bi bi-person"></i> {todo.personId === 1 ? "Mehrdad Javan" : "Simon Elbrink"}
                                                             </span>
-                                                            <span className="badge bg-warning text-dark me-2">{todo.completed}</span>
+                                                            <span className={`badge ${todo.completed === false ? "bg-warning text-dark" : "bg-success"} me-2`}>
+                                                                {todo.completed === false ? "In progress" : "Complete"}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <div className="btn-group ms-3">
