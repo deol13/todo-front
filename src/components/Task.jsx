@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './Task.css';
 import Sidebar from './Sidebar';
 import Header from "./Header.jsx";
@@ -89,6 +89,14 @@ const Task = () => {
         let dateTime = date.split('T');
         return dateTime[0];
     }
+
+    //sort by dueDate, Memo will only recompute the memorized value when one of the depoendencies has changed. 
+    const sortByDate = useMemo(() => {
+        console.log("Sort");
+        todoTasks.sort((a, b) => a.dueDate > b.dueDate ? 1 : -1 );
+    }, [todoTasks])
+
+    //filter first click completed, second not completed, third default?
 
     return (
         <div className="dashboard-layout">
@@ -183,7 +191,7 @@ const Task = () => {
                                         <button className="btn btn-outline-secondary btn-sm" title="Filter">
                                             <i className="bi bi-funnel"></i>
                                         </button>
-                                        <button className="btn btn-outline-secondary btn-sm" title="Sort">
+                                        <button className="btn btn-outline-secondary btn-sm" title="Sort" onClick={sortByDate}>
                                             <i className="bi bi-sort-down"></i>
                                         </button>
                                     </div>
