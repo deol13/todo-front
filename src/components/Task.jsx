@@ -9,6 +9,12 @@ import { todoAPIEndpoint as apiEndpoint, todoOverdueAPIEndpoint as overDueApiEnd
  } from "./APIs";
 import { useAuth } from '../context/AuthContext';
 
+
+//TODO: Lägg till en ny API i back-end som hämtar endast user role personer
+//  sen använd den i front-end i form person select och edit card person select.
+//TODO: Lägg till mera kommentarer.
+//TODO: separera denna komponenten till flera mindre.
+
 const Task = () => {
     const {
         register,
@@ -33,6 +39,8 @@ const Task = () => {
     // True means sorting by earliest dueDate, false means sorting by latest dueDate.
     const [sortByEarliest, setSortByEarliest] = useState(true);
     const [filter, setFilter] = useState("NoFiltering");
+    const [editTodo, setEditTodo] = useState(false);
+    const [editTodoId, setEditTodoId] = useState("");
 
     // On refresh and when an array is changed this useEffect is called.
     useEffect(() => {
@@ -86,9 +94,6 @@ const Task = () => {
 
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
-        const localISO = new Date().toLocaleString('sv-SE', { hour12: false }).replace(' ', 'T');
-        data.createdAt = localISO;
-        data.updatedAt = localISO;
         data.numberOfAttachments = data.numberOfAttachments.length;
 
         console.log(data);
@@ -156,15 +161,127 @@ const Task = () => {
         setFilter(event.target.value);
     }
 
+    // Contains the values during edit mode.
+    const [titleEditValue, setTitleEditValue]= useState("");
+    const [descEditValue, setDescEditValue]= useState("");
+    const [dueDateEditValue, setDueDateEditValue]= useState("");
+    const [personEditValue, setPersonEditValue]= useState("");
+    const [statusEditValue, setStatusEditValue]= useState("");
+    let createdAtValue = "";
+    let updatedAtValue = "";
+    let numberOfAttachmentsValue = "";
 
+    const startEditTodo = (id) => {
+        // If one todo is already being edit stop another one from starting.
+        if(!editTodo) {
+            console.log("start edit todo")
+            setEditTodo(true);
+            setEditTodoId(id);
 
-    // TODO: Edit tasks.
-    // alla ändringar sparas tills "klar" knappen är klickad, då ändras allt tillbaka och ändringarna skickas.
-    // ändra allt till inputs med:
-    //  {boolean} (inputs)
-    //  regular
+            const currentTodo = todoTasks.find((todo) => todo.id === id);
 
-    // Använda get Person by id för att hämta alla person's för todoPerson.
+            setTitleEditValue(currentTodo.title);
+            setDescEditValue(currentTodo.description);
+            setDueDateEditValue(currentTodo.dueDate);
+            setPersonEditValue(currentTodo.personId);
+            setStatusEditValue(currentTodo.completed);
+            createdAtValue = currentTodo.createdAt;
+            updatedAtValue = currentTodo.updatedAt;
+            numberOfAttachmentsValue = currentTodo.numberOfAttachments;
+
+            console.log("STATUS BEFORE EDIT: ", currentTodo.completed)
+        }
+    }
+    const endEditTodo = (id) => {
+        // So nothing gets done before edit button is clicked.
+        if(editTodo) {
+            console.log("end edit todo")
+            setEditTodo(false);
+            setEditTodoId("")
+
+            // If nothing was changed then its unnecessary to update todo in the back-end.
+            const update = checkForChanges(id);
+
+            if(update) {
+                const data = {
+                    "id": id,
+                    "title": titleEditValue,
+                    "description": descEditValue,
+                    "completed": statusEditValue,
+                    "createdAt": createdAtValue,
+                    "updatedAt": updatedAtValue,
+                    "dueDate": dueDateEditValue,
+                    "personId": personEditValue,
+                    "numberOfAttachments": numberOfAttachmentsValue
+                }
+
+                updateTodo(id, data);
+            } else {
+                console.log("No changes, not updating")
+            }
+        }
+    }
+
+    // Updates the editied todo in the back-end
+    const updateTodo = async (id, data) => {
+        console.log("### Starting updated task...")
+
+        try{
+            const response = await axios.put(
+                `${apiEndpoint}/${id}`, data, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.status === 204) {
+                reset();
+                console.log("Todo task updated successfully");
+                checkFilter();
+            } else if(response.status === 404) {
+                console.log("Task not found")
+            } else {
+                console.log("Unexpected reponse status:", response.status);
+            }
+        } catch (error) {
+            console.log("Error creating todo task;", error)
+        }
+    }
+
+    // Used in edit mode to set the new values for the todo
+    const changeTitle = (event) => {
+        setTitleEditValue(event.target.value);
+    }
+    const changeDescription = (event) => {
+        setDescEditValue(event.target.value);
+    }
+    const changeDueDate = (event) => {
+        setDueDateEditValue(event.target.value);
+    }
+    const changePerson = (event) => {
+        setPersonEditValue(event.target.value);
+    }
+    const changeStatus = (event) => {
+        setStatusEditValue(event.target.value);
+    }
+
+    // Checks if anything was updated in edit mode.
+    const checkForChanges = (id) => {
+        const currentTodo = todoTasks.find((todo) => todo.id === id);
+
+        if(currentTodo.title !== titleEditValue) {
+            return true;
+        } else if(currentTodo.description !== descEditValue) {
+            return true;
+        } else if(currentTodo.dueDate !== dueDateEditValue) {
+            return true;
+        } else if(currentTodo.personId !== personEditValue) {
+            return true;
+        } else if(currentTodo.completed !== statusEditValue) {
+            return true;
+        }
+        return false;
+    }
+    
 
     // Used to remove time from dates.
     const removeTime = (date) => {
@@ -281,27 +398,55 @@ const Task = () => {
                                                 <div className="d-flex w-100 justify-content-between align-items-start">
                                                     <div className="flex-grow-1">
                                                         <div className="d-flex justify-content-between">
-                                                            <h6 className="mb-1">{todo.title}</h6>
+                                                            {editTodo && editTodoId === todo.id ? 
+                                                                (<input type="text" onChange={changeTitle} defaultValue={titleEditValue}></input>) :
+                                                                (<h6 className="mb-1">{todo.title}</h6>)}
                                                             <small className="text-muted ms-2">Created: {removeTime(todo.createdAt)}</small>
                                                         </div>
-                                                        <p className="mb-1 text-muted small">{todo.description}s</p>
+                                                        {editTodo && editTodoId === todo.id ? 
+                                                            (<textarea rows="2" onChange={changeDescription} defaultValue={descEditValue}></textarea>) :
+                                                            (<p className="mb-1 text-muted small">{todo.description}</p>)}
+                                                        
                                                         <div className="d-flex align-items-center flex-wrap">
-                                                            <small className="text-muted me-2">
-                                                                <i className="bi bi-calendar-event"></i> {removeTime(todo.dueDate)}
-                                                            </small>
-                                                            <span className="badge bg-info me-2">
-                                                                <i className="bi bi-person"></i> {todo.personId === 1 ? "Mehrdad Javan" : "Simon Elbrink"}
-                                                            </span>
-                                                            <span className={`badge ${todo.completed === false ? "bg-warning text-dark" : "bg-success"} me-2`}>
-                                                                {todo.completed === false ? "In progress" : "Complete"}
-                                                            </span>
+                                                            {editTodo && editTodoId === todo.id ? 
+                                                                (
+                                                                    <>
+                                                                    <input type="datetime-local" className='me-2' onChange={changeDueDate} defaultValue={dueDateEditValue}></input>
+                                                                    <div>
+                                                                        <select className='form-select me-2' onChange={changePerson} defaultValue={personEditValue}>
+                                                                        <option value="">-- Select Person (Optional) --</option>
+                                                                        <option value="1">Mehrdad Javan</option>
+                                                                        <option value="2">Simon Elbrink</option>
+                                                                    </select>
+                                                                    <select className='form-select' onChange={changeStatus} defaultValue={statusEditValue}>
+                                                                        <option value="true">Complete</option>
+                                                                        <option value="false">In Progress</option>
+                                                                    </select>
+                                                                    </div>
+                                                                    
+                                                                    </>
+                                                                ) :
+                                                                (<>
+                                                                    <small className="text-muted me-2">
+                                                                        <i className="bi bi-calendar-event"></i> {removeTime(todo.dueDate)}
+                                                                    </small>
+                                                                    <span className="badge bg-info me-2">
+                                                                        <i className="bi bi-person"></i> {todo.personId === 1 ? "Mehrdad Javan" : "Simon Elbrink"}
+                                                                    </span>
+                                                                    <span className={`badge ${todo.completed === false ? "bg-warning text-dark" : "bg-success"} me-2`}>
+                                                                        {todo.completed === false ? "In progress" : "Complete"}
+                                                                    </span>
+                                                                </>
+                                                                )
+                                                                }
+                                                            
                                                         </div>
                                                     </div>
                                                     <div className="btn-group ms-3">
-                                                        <button className="btn btn-outline-success btn-sm" title="Complete">
+                                                        <button className="btn btn-outline-success btn-sm" title="Complete" onClick={() => endEditTodo(todo.id)}>
                                                             <i className="bi bi-check-lg"></i>
                                                         </button>
-                                                        <button className="btn btn-outline-primary btn-sm" title="Edit">
+                                                        <button className="btn btn-outline-primary btn-sm" title="Edit" onClick={() => startEditTodo(todo.id)}>
                                                             <i className="bi bi-pencil"></i>
                                                         </button>
                                                         {hasRole("ROLE_ADMIN") && (
