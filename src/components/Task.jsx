@@ -4,7 +4,9 @@ import Sidebar from './Sidebar';
 import Header from "./Header.jsx";
 import { useForm } from "react-hook-form"
 import axios from "axios";
-import { todoAPIEndpoint as apiEndpoint } from "./APIs";
+import { todoAPIEndpoint as apiEndpoint, todoOverdueAPIEndpoint as overDueApiEndPoint,
+    todoStatusTrueAPIEndpoint as completeApiEndpoint, todoStatusFalseAPIEndpoint as InprogressApiEndpoint
+ } from "./APIs";
 import { useAuth } from '../context/AuthContext';
 
 const Task = () => {
@@ -24,25 +26,46 @@ const Task = () => {
         personId: "",
         numberOfAttachments: "",
         },
-    });
+    }); 
 
-    const { token } = useAuth();
+    const { token, hasRole } = useAuth();
     const [todoTasks, setTodoTasks] = useState([]);
     // True means sorting by earliest dueDate, false means sorting by latest dueDate.
     const [sortByEarliest, setSortByEarliest] = useState(true);
+    const [filter, setFilter] = useState("NoFiltering");
 
     // On refresh and when an array is changed this useEffect is called.
     useEffect(() => {
         console.log("useEffect has been executed!");
-        fetchAllTodoTask();
-    }, []);
+        checkFilter();
+    }, [filter]);
 
-    // Get all todo's
-    const fetchAllTodoTask = async () => {
-        console.log("### Starting to fetch all todo tasks...");
+    const checkFilter = () => {
+        console.log("current filter: ", filter);
+        switch(filter) {
+            case "Overdue" :
+                fetchFilteredTodoTasks(overDueApiEndPoint);
+                break;
+            case "InProgress":
+                fetchFilteredTodoTasks(InprogressApiEndpoint);
+                break;
+            case "Complete":
+                fetchFilteredTodoTasks(completeApiEndpoint);
+                break;
+            case "NoFiltering":
+                fetchFilteredTodoTasks(apiEndpoint);
+                break;
+            default:
+                fetchFilteredTodoTasks(apiEndpoint);
+                break;
+        }
+    }
+
+    const fetchFilteredTodoTasks = async (endpoint) => {
+        console.log(`### Starting to fetch ${endpoint} todo tasks...`);
 
         await axios
-        .get(apiEndpoint, {
+        .get(endpoint, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -59,7 +82,7 @@ const Task = () => {
             console.log("Unexpected occured during API call:", error);
         });
         console.log("### finished fetching todo tasks.");
-    };
+    }
 
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
@@ -79,19 +102,40 @@ const Task = () => {
             if (response.status === 201) {
                 reset();
                 console.log("Todo task created successfully");
-                fetchAllTodoTask();
+                checkFilter();
             }
         } catch (error) {
             console.log("Error creating todo task;", error)
         }
     }
 
-    // Used to remove time from dates.
-    const removeTime = (date) => {
-        let dateTime = date.split('T');
-        return dateTime[0];
+    // When I use onClick{clickedRemoveTodo(todo.id)} clickedRemoveTodo is automatically called, I need to pass a reference to the function instead.
+    // Which is why I use onClick{() => clickedRemoveTodo(todo.id)}
+    const clickedRemoveTodo = (id) => {
+        removeTodo(id);
     }
 
+    const removeTodo = async (id) => {
+         console.log(`### Starting deleting todo task with id ${id}...`)   
+        try{
+            const response = await axios.delete(
+                `${apiEndpoint}/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            if (response.status === 204) {
+                console.log("Todo task deleted successfully.");
+                checkFilter();
+            } else if(response.status === 404) {
+                console.log("Task not found")
+            } else {
+                console.log("Unexpected reponse status:", response.status);    
+            }
+        } catch(error) {
+           console.log("Error creating todo task;", error)
+        }
+    }
     
     //sort by dueDate, Memo will only recompute the memorized value when one of the depoendencies has changed. 
     const sortByDate = useMemo(() => {
@@ -106,10 +150,27 @@ const Task = () => {
         console.log("Change sort");
         setSortByEarliest(sortByEarliest === true ? false : true);
     }
-    
-    //TODO: filter, ändra till en select element med valen: ingen filtering, overdue, personid = 1, personid = 2 ..., in progress, complete.
-    // Sen ha en switch som onSubmit och useEffect kaller, den kollar en variable och kallar  apin som matchar filter valet
 
+    const changeFilter = (event) => {
+        console.log("change filter");
+        setFilter(event.target.value);
+    }
+
+
+
+    // TODO: Edit tasks.
+    // alla ändringar sparas tills "klar" knappen är klickad, då ändras allt tillbaka och ändringarna skickas.
+    // ändra allt till inputs med:
+    //  {boolean} (inputs)
+    //  regular
+
+    // Använda get Person by id för att hämta alla person's för todoPerson.
+
+    // Used to remove time from dates.
+    const removeTime = (date) => {
+        let dateTime = date.split('T');
+        return dateTime[0];
+    }
 
     return (
         <div className="dashboard-layout">
@@ -201,9 +262,13 @@ const Task = () => {
                                 <div className="card-header bg-white d-flex justify-content-between align-items-center">
                                     <h5 className="card-title mb-0">Tasks</h5>
                                     <div className="btn-group">
-                                        <button className="btn btn-outline-secondary btn-sm" title="Filter">
-                                            <i className="bi bi-funnel"></i>
-                                        </button>
+                                        <select className="form-select" id="todoPersonSelect" onChange={changeFilter}>
+                                            <option value="">-- Select filter (Optional) --</option>
+                                            <option value="Overdue">Overdue</option>
+                                            <option value="InProgress">In Progress</option>
+                                            <option value="Complete">Complete</option>
+                                            <option value="Nofiltering">No filtering</option>
+                                        </select>
                                         <button className="btn btn-outline-secondary btn-sm" title="Sort" onClick={changeSort}>
                                             <i className="bi bi-sort-down"></i>
                                         </button>
@@ -239,9 +304,11 @@ const Task = () => {
                                                         <button className="btn btn-outline-primary btn-sm" title="Edit">
                                                             <i className="bi bi-pencil"></i>
                                                         </button>
-                                                        <button className="btn btn-outline-danger btn-sm" title="Delete">
+                                                        {hasRole("ROLE_ADMIN") && (
+                                                        <button type="button" className="btn btn-outline-danger btn-sm" title="Delete" onClick={() => clickedRemoveTodo(todo.id)} >
                                                             <i className="bi bi-trash"></i>
-                                                        </button>
+                                                        </button>)}
+                                                        
                                                     </div>
                                                 </div>
                                             </div>
