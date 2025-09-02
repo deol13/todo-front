@@ -30,7 +30,7 @@ const Task = () => {
         updatedAt: "",
         dueDate: "",
         personId: "",
-        numberOfAttachments: "",
+        attachments: [],
         },
     }); 
 
@@ -94,24 +94,36 @@ const Task = () => {
 
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
-        data.numberOfAttachments = data.numberOfAttachments.length;
 
-        console.log(data);
+        // Merhdad added multipart/form-data for file attachments and this is required to package the request correctly. 
+        const file = data.attachments;
+        data.attachments = [];
 
-        try{
-            const response = await axios.post(apiEndpoint, data, {
+        const json = JSON.stringify(data);
+        const blob = new Blob([json], {
+            type: 'application/json'
+        });
+        const newData = new FormData();
+        newData.append("todo", blob);
+        newData.append("files", file);
+        //console.log(data);
+
+        await axios({
+                method: 'post',
+                url: apiEndpoint,
+                data: newData,
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
+            }).then(function(response) {
+                if (response.status === 201) {
+                    reset();
+                    console.log("Todo task created successfully");
+                    checkFilter();
+                }
+            }).catch(function (response) {
+                console.log("Error creating todo task;", response);
             });
-            if (response.status === 201) {
-                reset();
-                console.log("Todo task created successfully");
-                checkFilter();
-            }
-        } catch (error) {
-            console.log("Error creating todo task;", error)
-        }
     }
 
     // When I use onClick{clickedRemoveTodo(todo.id)} clickedRemoveTodo is automatically called, I need to pass a reference to the function instead.
@@ -169,7 +181,7 @@ const Task = () => {
     const [statusEditValue, setStatusEditValue]= useState("");
     let createdAtValue = "";
     let updatedAtValue = "";
-    let numberOfAttachmentsValue = "";
+    let attachmentsValue = "";
 
     const startEditTodo = (id) => {
         // If one todo is already being edit stop another one from starting.
@@ -187,7 +199,7 @@ const Task = () => {
             setStatusEditValue(currentTodo.completed);
             createdAtValue = currentTodo.createdAt;
             updatedAtValue = currentTodo.updatedAt;
-            numberOfAttachmentsValue = currentTodo.numberOfAttachments;
+            attachmentsValue = currentTodo.attachmentsValue;
 
             console.log("STATUS BEFORE EDIT: ", currentTodo.completed)
         }
@@ -212,7 +224,8 @@ const Task = () => {
                     "updatedAt": updatedAtValue,
                     "dueDate": dueDateEditValue,
                     "personId": personEditValue,
-                    "numberOfAttachments": numberOfAttachmentsValue
+                    "numberOfAttachments": 0,
+                    "attachments": attachmentsValue
                 }
 
                 updateTodo(id, data);
@@ -226,25 +239,37 @@ const Task = () => {
     const updateTodo = async (id, data) => {
         console.log("### Starting updated task...")
 
-        try{
-            const response = await axios.put(
-                `${apiEndpoint}/${id}`, data, {
+        const file = data.attachments;
+        data.attachments = [];
+
+        const json = JSON.stringify(data);
+        const blob = new Blob([json], {
+            type: 'application/json'
+        });
+        const newData = new FormData();
+        newData.append("todo", blob);
+        newData.append("files", file);
+        //console.log(data);
+
+        await axios({
+                method: 'put',
+                url: `${apiEndpoint}/${id}`,
+                data: newData,
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
-            });
-            if (response.status === 204) {
-                reset();
-                console.log("Todo task updated successfully");
-                checkFilter();
-            } else if(response.status === 404) {
+            }).then(function(response) {
+                if (response.status === 200) {
+                    console.log("Todo task updated successfully");
+                    checkFilter();
+                } else if(response.status === 404) {
                 console.log("Task not found")
-            } else {
-                console.log("Unexpected reponse status:", response.status);
-            }
-        } catch (error) {
-            console.log("Error creating todo task;", error)
-        }
+                } else {
+                    console.log("Unexpected reponse status:", response.status);
+                }
+            }).catch(function (response) {
+                console.log("Error updating todo task;", response);
+            });
     }
 
     // Used in edit mode to set the new values for the todo
@@ -358,7 +383,7 @@ const Task = () => {
                                             <label className="form-label">Attachments</label>
                                             <div className="input-group mb-3">
                                                 <input type="file" className="form-control" id="todoAttachments" multiple 
-                                                {...register("numberOfAttachments")}/>
+                                                {...register("attachments")}/>
                                                 <button className="btn btn-outline-secondary" type="button">
                                                     <i className="bi bi-x-lg"></i>
                                                 </button>
