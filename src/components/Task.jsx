@@ -5,13 +5,11 @@ import Header from "./Header.jsx";
 import { useForm } from "react-hook-form"
 import axios from "axios";
 import { todoAPIEndpoint as apiEndpoint, todoOverdueAPIEndpoint as overDueApiEndPoint,
-    todoStatusTrueAPIEndpoint as completeApiEndpoint, todoStatusFalseAPIEndpoint as InprogressApiEndpoint
- } from "./APIs";
+    todoStatusTrueAPIEndpoint as completeApiEndpoint, todoStatusFalseAPIEndpoint as InprogressApiEndpoint, personAPIEndpoint
+ } from "./taskService.js";
 import { useAuth } from '../context/AuthContext';
 
-
-//TODO: Lägg till en ny API i back-end som hämtar endast user role personer
-//  sen använd den i front-end i form person select och edit card person select.
+//TODO: Implement taskService.js with API calls. 
 //TODO: Lägg till mera kommentarer.
 //TODO: separera denna komponenten till flera mindre.
 
@@ -41,12 +39,17 @@ const Task = () => {
     const [filter, setFilter] = useState("NoFiltering");
     const [editTodo, setEditTodo] = useState(false);
     const [editTodoId, setEditTodoId] = useState("");
+    const [allUsers, setAllUsers] = useState([]);
 
     // On refresh and when an array is changed this useEffect is called.
     useEffect(() => {
         console.log("useEffect has been executed!");
         checkFilter();
     }, [filter]);
+
+    useEffect(() => {
+        fetchAllUsers();
+    }, []);
 
     const checkFilter = () => {
         console.log("current filter: ", filter);
@@ -70,7 +73,7 @@ const Task = () => {
     }
 
     const fetchFilteredTodoTasks = async (endpoint) => {
-        console.log(`### Starting to fetch ${endpoint} todo tasks...`);
+        console.log(`### Starting to fetch todo tasks...`);
 
         await axios
         .get(endpoint, {
@@ -90,6 +93,33 @@ const Task = () => {
             console.log("Unexpected occured during API call:", error);
         });
         console.log("### finished fetching todo tasks.");
+    }
+
+    const fetchAllUsers = async () => {
+        console.log(`### Starting to fetch users...`);
+        
+        await axios
+        .get(personAPIEndpoint, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then((response) => {
+            console.log("Response:", response);
+            if (response.status === 200) {
+                setUpUsers(response.data);
+            } else {
+                console.log("Unexpected reponse status:", response.status);
+            }
+        })
+        .catch((error) => {
+            console.log("Unexpected occured during API call:", error);
+        });
+        console.log("### finished fetching all users.");
+    }
+
+    const setUpUsers = (data) => {
+        setAllUsers(data);
     }
 
     const onSubmit = async (data) => {
@@ -232,30 +262,42 @@ const Task = () => {
     const endEditTodo = (id) => {
         // So nothing gets done before edit button is clicked.
         if(editTodo) {
-            console.log("end edit todo")
-            setEditTodo(false);
-            setEditTodoId("")
+            if(titleEditValue.length < 2) {
+                alert("Title must be at leasty 2 characters");
+                return;
+            } else if(titleEditValue.length > 100) {
+                alert("Title can't be more than 100 characters");
+                return;
+            } else if(descEditValue.length > 500) {
+                alert("Description can't be more than 500 characters");
+                return;
+            }
+            else {
+                console.log("end edit todo")
+                setEditTodo(false);
+                setEditTodoId("")
 
-            // If nothing was changed then its unnecessary to update todo in the back-end.
-            const update = checkForChanges(id);
+                // If nothing was changed then its unnecessary to update todo in the back-end.
+                const update = checkForChanges(id);
 
-            if(update) {
-                const data = {
-                    "id": id,
-                    "title": titleEditValue,
-                    "description": descEditValue,
-                    "completed": statusEditValue,
-                    "createdAt": createdAtValue,
-                    "updatedAt": updatedAtValue,
-                    "dueDate": dueDateEditValue,
-                    "personId": personEditValue,
-                    "numberOfAttachments": 0,
-                    "attachments": attachmentsValue
+                if(update) {
+                    const data = {
+                        "id": id,
+                        "title": titleEditValue,
+                        "description": descEditValue,
+                        "completed": statusEditValue,
+                        "createdAt": createdAtValue,
+                        "updatedAt": updatedAtValue,
+                        "dueDate": dueDateEditValue,
+                        "personId": personEditValue,
+                        "numberOfAttachments": 0,
+                        "attachments": attachmentsValue
+                    }
+
+                    updateTodo(id, data);
+                } else {
+                    console.log("No changes, not updating")
                 }
-
-                updateTodo(id, data);
-            } else {
-                console.log("No changes, not updating")
             }
         }
     }
@@ -340,6 +382,12 @@ const Task = () => {
         return dateTime[0];
     }
 
+    // To show the name the personId needs to be checked against all users.
+    const getUserNameWithId = (id) => {
+        const user = allUsers.find((user) => user.id === id);
+        return user.name;
+    }
+
     return (
         <div className="dashboard-layout">
             <Sidebar isOpen={false} onClose={() => {}} />
@@ -400,8 +448,9 @@ const Task = () => {
                                                 <select className="form-select" id="todoPerson"
                                                 {...register("personId")}>
                                                     <option value="">-- Select Person (Optional) --</option>
-                                                    <option value="1">Mehrdad Javan</option>
-                                                    <option value="2">Simon Elbrink</option>
+                                                    {allUsers.map((user) => (
+                                                        <option value={`${user.id}`}>{user.name}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>
@@ -466,8 +515,9 @@ const Task = () => {
                                                                     <div>
                                                                         <select className='form-select me-2' onChange={changePerson} defaultValue={personEditValue}>
                                                                         <option value="">-- Select Person (Optional) --</option>
-                                                                        <option value="1">Mehrdad Javan</option>
-                                                                        <option value="2">Simon Elbrink</option>
+                                                                        {allUsers.map((user) => (
+                                                                            <option value={`${user.id}`}>{user.name}</option>
+                                                                        ))}
                                                                     </select>
                                                                     <select className='form-select' onChange={changeStatus} defaultValue={statusEditValue}>
                                                                         <option value="true">Complete</option>
@@ -482,7 +532,7 @@ const Task = () => {
                                                                         <i className="bi bi-calendar-event"></i> {removeTime(todo.dueDate)}
                                                                     </small>
                                                                     <span className="badge bg-info me-2">
-                                                                        <i className="bi bi-person"></i> {todo.personId === 1 ? "Mehrdad Javan" : "Simon Elbrink"}
+                                                                        <i className="bi bi-person"></i> {getUserNameWithId(todo.personId)}
                                                                     </span>
                                                                     <span className={`badge ${todo.completed === false ? "bg-warning text-dark" : "bg-success"} me-2`}>
                                                                         {todo.completed === false ? "In progress" : "Complete"}
