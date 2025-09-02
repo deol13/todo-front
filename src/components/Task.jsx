@@ -94,7 +94,16 @@ const Task = () => {
 
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
+        
+        // form hook library doesn't seem to have a validation for file type so this is my custom valiation.
+        const passedFileValidation = fileValidation(data.attachments);
+        if(!passedFileValidation) {
+            console.log("File validation failed.");
+            return;
+        };
 
+        console.log("file validation succeded")
+        
         // Merhdad added multipart/form-data for file attachments and this is required to package the request correctly. 
         const file = data.attachments;
         data.attachments = [];
@@ -124,6 +133,22 @@ const Task = () => {
             }).catch(function (response) {
                 console.log("Error creating todo task;", response);
             });
+    }
+
+    const fileValidation = (files) => {
+        // form hook library doesn't seem to have a validation for file type so this is my custom valiation.
+        if(files.length > 5) {
+            alert("Maximum number of files are 5");
+            return false;
+        } else {
+            for(let i = 0; i < files.length; i++) {
+                if(files[i].size > 2097152) {
+                    alert("Maximum size of a file is 2MB");
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // When I use onClick{clickedRemoveTodo(todo.id)} clickedRemoveTodo is automatically called, I need to pass a reference to the function instead.
@@ -310,6 +335,7 @@ const Task = () => {
 
     // Used to remove time from dates.
     const removeTime = (date) => {
+        if(date === undefined || date === null ||date === "") return "";
         let dateTime = date.split('T');
         return dateTime[0];
     }
@@ -382,7 +408,7 @@ const Task = () => {
                                         <div className="mb-3">
                                             <label className="form-label">Attachments</label>
                                             <div className="input-group mb-3">
-                                                <input type="file" className="form-control" id="todoAttachments" multiple 
+                                                <input type="file" className="form-select" id="todoAttachments" multiple 
                                                 {...register("attachments")}/>
                                                 <button className="btn btn-outline-secondary" type="button">
                                                     <i className="bi bi-x-lg"></i>
