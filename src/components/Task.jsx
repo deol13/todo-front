@@ -3,13 +3,9 @@ import './Task.css';
 import Sidebar from './Sidebar';
 import Header from "./Header.jsx";
 import { useForm } from "react-hook-form"
-import axios from "axios";
-import { todoAPIEndpoint as apiEndpoint, todoOverdueAPIEndpoint as overDueApiEndPoint,
-    todoStatusTrueAPIEndpoint as completeApiEndpoint, todoStatusFalseAPIEndpoint as InprogressApiEndpoint, personAPIEndpoint
- } from "./taskService.js";
+import { checkFilter, fetchAllUsers, sendNewTodo, removeTodo, updateTodo } from "./taskService.js";
 import { useAuth } from '../context/AuthContext';
 
-//TODO: Implement taskService.js with API calls. 
 //TODO: Lägg till mera kommentarer.
 //TODO: separera denna komponenten till flera mindre.
 
@@ -44,83 +40,29 @@ const Task = () => {
     // On refresh and when an array is changed this useEffect is called.
     useEffect(() => {
         console.log("useEffect has been executed!");
-        checkFilter();
+        fetchTodos();
     }, [filter]);
 
     useEffect(() => {
-        fetchAllUsers();
-    }, []);
+        // fetchAllUsers in TaskService.js, it fetches all users.
+        setUpUsers();
+    }, []); //[] <-on page render
 
-    const checkFilter = () => {
-        console.log("current filter: ", filter);
-        switch(filter) {
-            case "Overdue" :
-                fetchFilteredTodoTasks(overDueApiEndPoint);
-                break;
-            case "InProgress":
-                fetchFilteredTodoTasks(InprogressApiEndpoint);
-                break;
-            case "Complete":
-                fetchFilteredTodoTasks(completeApiEndpoint);
-                break;
-            case "NoFiltering":
-                fetchFilteredTodoTasks(apiEndpoint);
-                break;
-            default:
-                fetchFilteredTodoTasks(apiEndpoint);
-                break;
-        }
+    // Call checkFilter in TaskService.js which checks what filter is on before sending the right path to the fetch function.
+    // Then adds them to the state todoTasks
+    const fetchTodos = async () => {
+        const todos = await checkFilter(filter, token);
+        console.log("Todos: -----------", todos);
+        setTodoTasks(todos);
     }
 
-    const fetchFilteredTodoTasks = async (endpoint) => {
-        console.log(`### Starting to fetch todo tasks...`);
-
-        await axios
-        .get(endpoint, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then((response) => {
-            console.log("Response:", response);
-            if (response.status === 200) {
-                setTodoTasks(response.data);
-            } else {
-                console.log("Unexpected reponse status:", response.status);
-            }
-        })
-        .catch((error) => {
-            console.log("Unexpected occured during API call:", error);
-        });
-        console.log("### finished fetching todo tasks.");
+    // Calls fetchAllUsers to get all users and adds them to allUser state.
+    const setUpUsers = async () => {
+        const users = await fetchAllUsers(token);
+        console.log("Users: -----------", users);
+        setAllUsers(users);
     }
 
-    const fetchAllUsers = async () => {
-        console.log(`### Starting to fetch users...`);
-        
-        await axios
-        .get(personAPIEndpoint, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then((response) => {
-            console.log("Response:", response);
-            if (response.status === 200) {
-                setUpUsers(response.data);
-            } else {
-                console.log("Unexpected reponse status:", response.status);
-            }
-        })
-        .catch((error) => {
-            console.log("Unexpected occured during API call:", error);
-        });
-        console.log("### finished fetching all users.");
-    }
-
-    const setUpUsers = (data) => {
-        setAllUsers(data);
-    }
 
     const onSubmit = async (data) => {
         console.log("### Starting to send the new task to backend...")
@@ -128,41 +70,16 @@ const Task = () => {
         // form hook library doesn't seem to have a validation for file type so this is my custom valiation.
         const passedFileValidation = fileValidation(data.attachments);
         if(!passedFileValidation) {
-            console.log("File validation failed.");
+            console.log("File validation failed");
             return;
         };
+        console.log("File validation succeded");
 
-        console.log("file validation succeded")
-        
-        // Merhdad added multipart/form-data for file attachments and this is required to package the request correctly. 
-        const file = data.attachments;
-        data.attachments = [];
-
-        const json = JSON.stringify(data);
-        const blob = new Blob([json], {
-            type: 'application/json'
-        });
-        const newData = new FormData();
-        newData.append("todo", blob);
-        newData.append("files", file);
-        //console.log(data);
-
-        await axios({
-                method: 'post',
-                url: apiEndpoint,
-                data: newData,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            }).then(function(response) {
-                if (response.status === 201) {
-                    reset();
-                    console.log("Todo task created successfully");
-                    checkFilter();
-                }
-            }).catch(function (response) {
-                console.log("Error creating todo task;", response);
-            });
+        const sendBoolean = await sendNewTodo(data, token);
+        if(sendBoolean) {
+            reset();
+            fetchTodos();
+        }
     }
 
     const fileValidation = (files) => {
@@ -183,39 +100,20 @@ const Task = () => {
 
     // When I use onClick{clickedRemoveTodo(todo.id)} clickedRemoveTodo is automatically called, I need to pass a reference to the function instead.
     // Which is why I use onClick{() => clickedRemoveTodo(todo.id)}
-    const clickedRemoveTodo = (id) => {
-        removeTodo(id);
-    }
-
-    const removeTodo = async (id) => {
-         console.log(`### Starting deleting todo task with id ${id}...`)   
-        try{
-            const response = await axios.delete(
-                `${apiEndpoint}/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            if (response.status === 204) {
-                console.log("Todo task deleted successfully.");
-                checkFilter();
-            } else if(response.status === 404) {
-                console.log("Task not found")
-            } else {
-                console.log("Unexpected reponse status:", response.status);    
-            }
-        } catch(error) {
-           console.log("Error creating todo task;", error)
-        }
+    const clickedRemoveTodo = async (id) => {
+        const removeBoolean = await removeTodo(id, token);
+        if(removeBoolean) fetchTodos();
     }
     
     //sort by dueDate, Memo will only recompute the memorized value when one of the depoendencies has changed. 
     const sortByDate = useMemo(() => {
         console.log("Sort");
-        if(sortByEarliest)
-            todoTasks.sort((a, b) => a.dueDate > b.dueDate ? 1 : -1 );
-        else
+        if(sortByEarliest) {
+            todoTasks.sort((a, b) => a.dueDate > b.dueDate ? 1 : -1 )
+        }
+        else {
             todoTasks.sort((a, b) => a.dueDate > b.dueDate ? -1 : 1 );
+        }
     }, [todoTasks, sortByEarliest])
     
     const changeSort = () => {
@@ -259,7 +157,7 @@ const Task = () => {
             console.log("STATUS BEFORE EDIT: ", currentTodo.completed)
         }
     }
-    const endEditTodo = (id) => {
+    const endEditTodo = async (id) => {
         // So nothing gets done before edit button is clicked.
         if(editTodo) {
             if(titleEditValue.length < 2) {
@@ -294,49 +192,13 @@ const Task = () => {
                         "attachments": attachmentsValue
                     }
 
-                    updateTodo(id, data);
+                    const updateBoolean = await updateTodo(id, data, token);
+                    if(updateBoolean) fetchTodos();
                 } else {
                     console.log("No changes, not updating")
                 }
             }
         }
-    }
-
-    // Updates the editied todo in the back-end
-    const updateTodo = async (id, data) => {
-        console.log("### Starting updated task...")
-
-        const file = data.attachments;
-        data.attachments = [];
-
-        const json = JSON.stringify(data);
-        const blob = new Blob([json], {
-            type: 'application/json'
-        });
-        const newData = new FormData();
-        newData.append("todo", blob);
-        newData.append("files", file);
-        //console.log(data);
-
-        await axios({
-                method: 'put',
-                url: `${apiEndpoint}/${id}`,
-                data: newData,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            }).then(function(response) {
-                if (response.status === 200) {
-                    console.log("Todo task updated successfully");
-                    checkFilter();
-                } else if(response.status === 404) {
-                console.log("Task not found")
-                } else {
-                    console.log("Unexpected reponse status:", response.status);
-                }
-            }).catch(function (response) {
-                console.log("Error updating todo task;", response);
-            });
     }
 
     // Used in edit mode to set the new values for the todo
