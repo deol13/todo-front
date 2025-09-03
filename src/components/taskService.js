@@ -114,7 +114,7 @@ export async function removeTodo(id, token) {
 
     try{
         const response = await axios.delete(
-            `${apiEndpoint}/${id}`, {
+            `${todoAPIEndpoint}/${id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -128,7 +128,7 @@ export async function removeTodo(id, token) {
             console.log("Unexpected reponse status:", response.status);   
         }
     } catch(error) {
-       console.log("Error creating todo task;", error);
+       console.log("Error removing todo task;", error);
     }
     return returnValue;
 }
