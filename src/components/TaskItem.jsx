@@ -18,7 +18,8 @@ const TaskItem = ({
     clickedRemoveTodo,
     updateTodo,
     attachments,
-    fetchTodos
+    fetchTodos,
+    fileValidation
 }) => {
     const { hasRole } = useAuth();
     const [editTodo, setEditTodo] = useState(false);
@@ -29,6 +30,7 @@ const TaskItem = ({
     const [dueDateEditValue, setDueDateEditValue]= useState("");
     const [personEditValue, setPersonEditValue]= useState("");
     const [statusEditValue, setStatusEditValue]= useState("");
+    const [attachmentsEditValue, setAttachmentsEditValue]= useState("");
 
     const startEditTodo = () => {
         // If one todo is already being edit stop another one from starting.
@@ -44,6 +46,7 @@ const TaskItem = ({
             setDueDateEditValue(dueDate);
             setPersonEditValue(personId);
             setStatusEditValue(completed);
+            setAttachmentsEditValue(attachments);
         }
     }
     const endEditTodo = async () => {
@@ -58,6 +61,8 @@ const TaskItem = ({
             } else if(descEditValue.length > 500) {
                 alert("Description can't be more than 500 characters");
                 return;
+            } else if(fileValidation) {
+
             }
             else {
                 console.log("end edit todo")
@@ -67,6 +72,9 @@ const TaskItem = ({
                 // If nothing was changed then its unnecessary to update todo in the back-end.
                 const update = checkForChanges(id);
 
+                const now = new Date();
+                const swedenISO = now.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour12: false }).replace(' ', 'T');
+
                 if(update) {
                     const data = {
                         "id": id,
@@ -74,11 +82,11 @@ const TaskItem = ({
                         "description": descEditValue,
                         "completed": statusEditValue,
                         "createdAt": createdAt,
-                        "updatedAt": updatedAtValue,
-                        "dueDate": updatedAt,
+                        "updatedAt": swedenISO,
+                        "dueDate": dueDateEditValue,
                         "personId": personEditValue,
-                        "numberOfAttachments": 0,
-                        "attachments": attachments
+                        "numberOfAttachments": attachmentsEditValue.length,
+                        "attachments": attachmentsEditValue
                     }
 
                     const updateBoolean = await updateTodo(data);
@@ -106,22 +114,24 @@ const TaskItem = ({
     const changeStatus = (event) => {
         setStatusEditValue(event.target.value);
     }
+    const changeAttachments = (event) => {
+        setAttachmentsEditValue(event.target.value);
+    }
 
     // Checks if anything was updated in edit mode.
     const checkForChanges = () => {
-        const currentTodo = todoTasks.find((todo) => todo.id === id);
 
-        if(currentTodo.title !== titleEditValue) {
+        if(title !== titleEditValue) {
             return true;
-        } else if(currentTodo.description !== descEditValue) {
+        } else if(description !== descEditValue) {
             return true;
-        } else if(currentTodo.dueDate !== dueDateEditValue) {
+        } else if(dueDate !== dueDateEditValue) {
             return true;
-        } else if(currentTodo.personId !== personEditValue) {
+        } else if(personId !== personEditValue) {
             return true;
-        } else if(currentTodo.completed !== statusEditValue) {
+        } else if(completed !== statusEditValue) {
             return true;
-        }
+        } else if(attachments !== attachmentsEditValue)
         return false;
     }
     
@@ -133,6 +143,10 @@ const TaskItem = ({
         if(user !== undefined)
             return user.name;
         return "";
+    }
+
+    const getNrOfFiles = () => {
+        if(attachments !== undefined && attachments !== null) return attachments.length;
     }
 
 
@@ -175,6 +189,7 @@ const TaskItem = ({
                                     <option value="true">Complete</option>
                                     <option value="false">In Progress</option>
                                 </select>
+                                <input type="file" className="form-select" id="todoAttachments" multiple onChange={changeAttachments} defaultValue={attachmentsEditValue}/>
                                 </div>
                                 
                                 </>
@@ -188,6 +203,9 @@ const TaskItem = ({
                                 </span>
                                 <span className={`badge ${completed === false ? "bg-warning text-dark" : "bg-success"} me-2`}>
                                     {completed === false ? "In progress" : "Complete"}
+                                </span>
+                                <span className="badge bg-secondary me-2">
+                                    <i className="bi bi-paperclip"></i> {getNrOfFiles()} attachments
                                 </span>
                             </>
                             )

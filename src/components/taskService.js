@@ -150,7 +150,7 @@ export async function updateTodo(id, data, token) {
     let returnValue = false;
     await axios({
         method: 'put',
-        url: `${apiEndpoint}/${id}`,
+        url: `${todoAPIEndpoint}/${id}`,
         data: newData,
         headers: {
             'Authorization': `Bearer ${token}`
