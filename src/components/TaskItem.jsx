@@ -61,7 +61,7 @@ const TaskItem = ({
             } else if(descEditValue.length > 500) {
                 alert("Description can't be more than 500 characters");
                 return;
-            } else if(fileValidation) {
+            } else if(!fileValidation(attachmentsEditValue)) {
 
             }
             else {
@@ -77,7 +77,7 @@ const TaskItem = ({
                 const swedenISO = now.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour12: false }).replace(' ', 'T');
 
                 // I can't add the todos current file to the input as a default value so if nothing else was added the old one is added here.
-                if(attachmentsEditValue === undefined || attachmentsEditValue.length === 0) {
+                if(attachmentsEditValue.length === 0 && attachments.length > 0) {
                     console.log("-----------No file added on edit!")
                     attachmentsEditValue = attachments;
                 }
@@ -99,11 +99,24 @@ const TaskItem = ({
 
                     const updateBoolean = await updateTodo(data);
                     if(updateBoolean) fetchTodos();
+                    cancelEdit();
                 } else {
                     console.log("No changes, not updating")
+                    cancelEdit();
                 }
             }
         }
+    }
+
+    const cancelEdit = () => {
+        setEditTodo(false);
+        setEditTodoId("");
+        setTitleEditValue("");
+        setDescEditValue("");
+        setDueDateEditValue("");
+        setPersonEditValue("");
+        setStatusEditValue("");
+        setAttachmentsEditValue("");
     }
 
     // Used in edit mode to set the new values for the todo
@@ -123,7 +136,8 @@ const TaskItem = ({
         setStatusEditValue(event.target.value);
     }
     const changeAttachments = (event) => {
-        setAttachmentsEditValue(event.target.value);
+        console.log("changeAttachments:", event.target.files);
+        setAttachmentsEditValue(event.target.files);
     }
 
     // Checks if anything was updated in edit mode.
@@ -138,6 +152,8 @@ const TaskItem = ({
         } else if(personId !== personEditValue) {
             return true;
         } else if(completed !== statusEditValue) {
+            return true;
+        } else if(attachmentsEditValue.length > 0) {
             return true;
         }
         return false;
@@ -197,7 +213,7 @@ const TaskItem = ({
                                     <option value="true">Complete</option>
                                     <option value="false">In Progress</option>
                                 </select>
-                                <input type="file" className="form-select" id="todoAttachments" multiple onChange={changeAttachments} />
+                                <input type="file" className="form-select" id="todoAttachments" multiple onChange={changeAttachments} onClick={(event) => {event.target.value = null;}}/>
                                 </div>
                                 
                                 </>
@@ -225,9 +241,18 @@ const TaskItem = ({
                     <button className="btn btn-outline-success btn-sm" title="Complete" onClick={() => endEditTodo()}>
                         <i className="bi bi-check-lg"></i>
                     </button>
-                    <button className="btn btn-outline-primary btn-sm" title="Edit" onClick={() => startEditTodo()}>
-                        <i className="bi bi-pencil"></i>
-                    </button>
+                    {editTodo && editTodoId === id ? (
+                        <button className="btn btn-outline-primary btn-sm" title="Cancel" onClick={() => cancelEdit()}>
+                            <i className="bi bi-trash3"></i>
+                        </button>
+                        
+                    ) :
+                    (
+                        <button className="btn btn-outline-primary btn-sm" title="Edit" onClick={() => startEditTodo()}>
+                            <i className="bi bi-pencil"></i>
+                        </button>
+                    )}
+                    
                     {hasRole("ROLE_ADMIN") && (
                     <button type="button" className="btn btn-outline-danger btn-sm" title="Delete" onClick={clickedRemoveTodo} >
                         <i className="bi bi-trash"></i>

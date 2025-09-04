@@ -73,9 +73,6 @@ const Task = () => {
         if(passedFileValidation) {
             console.log("File validation succeded");
 
-            //console.log("----------------------------")
-            //console.log("Attachments: ", data.attachments)
-            //console.log("----------------------------")
             const sendBoolean = await sendNewTodo(data, token);
             if(sendBoolean) {
                 reset();
@@ -249,6 +246,7 @@ const Task = () => {
                                                 clickedRemoveTodo = {() => clickedRemoveTodo(todo.id)}
                                                 updateTodo={(data) => updateTodo(todo.id, data, token)}
                                                 fetchTodos={() => fetchTodos()}
+                                                fileValidation={(files) => fileValidation(files)}
                                             /> 
                                         ))}
                                                

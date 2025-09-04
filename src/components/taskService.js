@@ -84,23 +84,7 @@ export async function sendNewTodo(data, token) {
     // So while it works for the rest of the data to make a blob and add the type of data to it, for the files we need to
     // add the content-type in the header.
 
-    const newData = new FormData();
-
-    if (data.attachments !== undefined && data.attachments.length > 0) {
-        for(let i = 0; i < data.attachments.length; i++) {
-            newData.append("files", data.attachments[i]);
-        }
-    }
-
-    data.attachments = [];
-    data.nrOfAttachments = 0;
-    const json = JSON.stringify(data);
-    const todo = new Blob([json], {
-        type: 'application/json'
-    });
-
-    newData.append("todo", todo);
-    
+    const newData = createFormData(data);
 
     let returnValue = false;
     await axios({
@@ -153,15 +137,8 @@ export async function removeTodo(id, token) {
 export async function updateTodo(id, data, token) {
     console.log("### Starting updated task...")
 
-    const file = data.attachments;
-    data.attachments = [];
-    const json = JSON.stringify(data);
-    const blob = new Blob([json], {
-        type: 'application/json'
-    });
-    const newData = new FormData();
-    newData.append("todo", blob);
-    newData.append("files", file);
+    
+    const newData = createFormData(data);
     
     let returnValue = false;
     await axios({
@@ -184,4 +161,25 @@ export async function updateTodo(id, data, token) {
         console.log("Error updating todo task;", response);
     });
     return returnValue;
+}
+
+function createFormData(data ){
+    const newData = new FormData();
+
+    if (data.attachments !== undefined && data.attachments.length > 0) {
+        for(let i = 0; i < data.attachments.length; i++) {
+            newData.append("files", data.attachments[i]);
+        }
+    }
+
+    data.attachments = [];
+    data.nrOfAttachments = 0;
+    const json = JSON.stringify(data);
+    const todo = new Blob([json], {
+        type: 'application/json'
+    });
+
+    newData.append("todo", todo);
+
+    return newData;
 }
