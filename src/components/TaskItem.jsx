@@ -17,6 +17,7 @@ const TaskItem = ({
     allUsers,
     clickedRemoveTodo,
     updateTodo,
+    attachments,
     fetchTodos
 }) => {
     const { hasRole } = useAuth();
@@ -28,9 +29,6 @@ const TaskItem = ({
     const [dueDateEditValue, setDueDateEditValue]= useState("");
     const [personEditValue, setPersonEditValue]= useState("");
     const [statusEditValue, setStatusEditValue]= useState("");
-    let createdAtValue = "";
-    let updatedAtValue = "";
-    let attachmentsValue = "";
 
     const startEditTodo = () => {
         // If one todo is already being edit stop another one from starting.
@@ -39,16 +37,13 @@ const TaskItem = ({
             setEditTodo(true);
             setEditTodoId(id);
 
-            const currentTodo = todoTasks.find((todo) => todo.id === id);
+           // const currentTodo = todoTasks.find((todo) => todo.id === id);
 
-            setTitleEditValue(currentTodo.title);
-            setDescEditValue(currentTodo.description);
-            setDueDateEditValue(currentTodo.dueDate);
-            setPersonEditValue(currentTodo.personId);
-            setStatusEditValue(currentTodo.completed);
-            createdAtValue = currentTodo.createdAt;
-            updatedAtValue = currentTodo.updatedAt;
-            attachmentsValue = currentTodo.attachmentsValue;
+            setTitleEditValue(title);
+            setDescEditValue(description);
+            setDueDateEditValue(dueDate);
+            setPersonEditValue(personId);
+            setStatusEditValue(completed);
         }
     }
     const endEditTodo = async () => {
@@ -78,12 +73,12 @@ const TaskItem = ({
                         "title": titleEditValue,
                         "description": descEditValue,
                         "completed": statusEditValue,
-                        "createdAt": createdAtValue,
+                        "createdAt": createdAt,
                         "updatedAt": updatedAtValue,
-                        "dueDate": dueDateEditValue,
+                        "dueDate": updatedAt,
                         "personId": personEditValue,
                         "numberOfAttachments": 0,
-                        "attachments": attachmentsValue
+                        "attachments": attachments
                     }
 
                     const updateBoolean = await updateTodo(data);

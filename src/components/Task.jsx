@@ -8,8 +8,8 @@ import { checkFilter, fetchAllUsers, sendNewTodo, removeTodo, updateTodo } from 
 import { useAuth } from '../context/AuthContext';
 import TaskItem from './TaskItem.jsx';
 
+//TODO: I edit mode, nuvarande title och description kommer inte upp.
 //TODO: Lägg till mera kommentarer.
-//TODO: separera denna komponenten till flera mindre.
 
 const Task = () => {
     const {
@@ -240,6 +240,7 @@ const Task = () => {
                                                 dueDate={todo.dueDate}
                                                 completed={todo.completed}
                                                 personId={todo.personId}
+                                                attachments={todo.attachments}
                                                 allUsers={allUsers}
                                                 clickedRemoveTodo = {() => clickedRemoveTodo(todo.id)}
                                                 updateTodo={(data) => updateTodo(todo.id, data, token)}
