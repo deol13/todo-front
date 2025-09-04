@@ -72,8 +72,16 @@ const TaskItem = ({
                 // If nothing was changed then its unnecessary to update todo in the back-end.
                 const update = checkForChanges(id);
 
+                // Used to set updateAt
                 const now = new Date();
                 const swedenISO = now.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', hour12: false }).replace(' ', 'T');
+
+                // I can't add the todos current file to the input as a default value so if nothing else was added the old one is added here.
+                if(attachmentsEditValue === undefined || attachmentsEditValue.length === 0) {
+                    console.log("-----------No file added on edit!")
+                    attachmentsEditValue = attachments;
+                }
+                    
 
                 if(update) {
                     const data = {
@@ -85,7 +93,7 @@ const TaskItem = ({
                         "updatedAt": swedenISO,
                         "dueDate": dueDateEditValue,
                         "personId": personEditValue,
-                        "numberOfAttachments": attachmentsEditValue.length,
+                        "numberOfAttachments": 0,
                         "attachments": attachmentsEditValue
                     }
 
@@ -131,7 +139,7 @@ const TaskItem = ({
             return true;
         } else if(completed !== statusEditValue) {
             return true;
-        } else if(attachments !== attachmentsEditValue)
+        }
         return false;
     }
     
@@ -189,7 +197,7 @@ const TaskItem = ({
                                     <option value="true">Complete</option>
                                     <option value="false">In Progress</option>
                                 </select>
-                                <input type="file" className="form-select" id="todoAttachments" multiple onChange={changeAttachments} defaultValue={attachmentsEditValue}/>
+                                <input type="file" className="form-select" id="todoAttachments" multiple onChange={changeAttachments} />
                                 </div>
                                 
                                 </>

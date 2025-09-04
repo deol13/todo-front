@@ -26,6 +26,7 @@ const Task = () => {
         updatedAt: "",
         dueDate: "",
         personId: "",
+        nrOfAttachments: 0,
         attachments: [],
         },
     }); 
@@ -69,16 +70,19 @@ const Task = () => {
         
         // form hook library doesn't seem to have a validation for file type so this is my custom valiation.
         const passedFileValidation = fileValidation(data.attachments);
-        if(!passedFileValidation) {
-            console.log("File validation failed");
-            return;
-        };
-        console.log("File validation succeded");
+        if(passedFileValidation) {
+            console.log("File validation succeded");
 
-        const sendBoolean = await sendNewTodo(data, token);
-        if(sendBoolean) {
-            reset();
-            fetchTodos();
+            //console.log("----------------------------")
+            //console.log("Attachments: ", data.attachments)
+            //console.log("----------------------------")
+            const sendBoolean = await sendNewTodo(data, token);
+            if(sendBoolean) {
+                reset();
+                fetchTodos();
+            }
+        } else {
+            console.log("File validation failed");
         }
     }
 
@@ -197,7 +201,7 @@ const Task = () => {
                                             <div className="input-group mb-3">
                                                 <input type="file" className="form-select" id="todoAttachments" multiple 
                                                 {...register("attachments")}/>
-                                                <button className="btn btn-outline-secondary" type="button">
+                                                <button className="btn btn-outline-secondary" type="button" onClick={() => reset()}>
                                                     <i className="bi bi-x-lg"></i>
                                                 </button>
                                             </div>

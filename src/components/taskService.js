@@ -77,15 +77,30 @@ export async function sendNewTodo(data, token) {
     console.log("### Starting to send the new task to backend...")
     
     // Merhdad added multipart/form-data for file attachments and this is required to package the request correctly. 
-    const file = data.attachments;
+    // FormData.append adds the data to the key, it doesn't remove the exist data that key has which is why we can append multiple time on the same key.
+    // We must append each file separately, appending the entire file list doesn't work, each file must be appended on the same key separately.
+
+    // WFor out back-end, adding the files in a Blob as we do the rest of the data doesn't work, it won't get the right data.
+    // So while it works for the rest of the data to make a blob and add the type of data to it, for the files we need to
+    // add the content-type in the header.
+
+    const newData = new FormData();
+
+    if (data.attachments !== undefined && data.attachments.length > 0) {
+        for(let i = 0; i < data.attachments.length; i++) {
+            newData.append("files", data.attachments[i]);
+        }
+    }
+
     data.attachments = [];
+    data.nrOfAttachments = 0;
     const json = JSON.stringify(data);
-    const blob = new Blob([json], {
+    const todo = new Blob([json], {
         type: 'application/json'
     });
-    const newData = new FormData();
-    newData.append("todo", blob);
-    newData.append("files", file);
+
+    newData.append("todo", todo);
+    
 
     let returnValue = false;
     await axios({
@@ -93,7 +108,8 @@ export async function sendNewTodo(data, token) {
             url: todoAPIEndpoint,
             data: newData,
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                "Content-type": "multipart/form-data"
             }
         }).then(function(response) {
             if (response.status === 201) {
