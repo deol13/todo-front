@@ -247,6 +247,7 @@ const Task = () => {
                                                 updateTodo={(data) => updateTodo(todo.id, data, token)}
                                                 fetchTodos={() => fetchTodos()}
                                                 fileValidation={(files) => fileValidation(files)}
+                                                showButtons={true}
                                             /> 
                                         ))}
                                                

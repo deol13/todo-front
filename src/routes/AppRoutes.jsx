@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import Login from '../components/Login';
 import Dashboard from '../components/Dashboard';
 import Task from '../components/Task';
+import User from '../components/User.jsx';
 import NotFound from "../components/NotFound";
 import RoleProtectedRoute from "./RoleProtectedRoute.jsx";
 
@@ -33,6 +34,13 @@ const AppRoutes = () => {
             {/* Redirect non-admin users to tasks page when trying to access dashboard */}
             <Route path="/dashboard" element={
                 <Navigate to="/dashboard/tasks" replace />
+            } />
+
+            {/* Team route - for both admin and user */}
+            <Route path="/dashboard/teams" element={
+                <RoleProtectedRoute requiredRoles={['ROLE_ADMIN']}>
+                    <User />
+                </RoleProtectedRoute>
             } />
 
             <Route path="*" element={<NotFound />} />

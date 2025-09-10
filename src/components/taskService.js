@@ -3,6 +3,7 @@ const todoOverdueAPIEndpoint = "http://localhost:9090/api/todo/overdue";
 const todoStatusTrueAPIEndpoint = "http://localhost:9090/api/todo/status?completed=true";
 const todoStatusFalseAPIEndpoint = "http://localhost:9090/api/todo/status?completed=false";
 const personAPIEndpoint = "http://localhost:9090/api/person";
+const tasksByPersonAPIEndpoint = "http://localhost:9090/api/todo/person";
 
 import axios from "axios";
 
@@ -69,6 +70,31 @@ export async function fetchAllUsers(token) {
         console.log("Unexpected occured during API call:", error);
     });
     console.log("### finished fetching all users.");
+    return returnValue;
+}
+
+export async function fetchTasksFromSpecificUser(id, token) {
+    console.log(`### Starting to fetch task from user, `, id);
+
+    let returnValue = [];
+    await axios
+    .get(`${tasksByPersonAPIEndpoint}/${id}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then((response) => {
+        console.log("Response:", response);
+        if (response.status === 200) {
+            returnValue = response.data;
+        } else {
+            console.log("Unexpected reponse status:", response.status);
+        }
+    })
+    .catch((error) => {
+        console.log("Unexpected occured during API call:", error);
+    });
+    console.log("### finished fetching task from specific user.");
     return returnValue;
 }
 
