@@ -19,7 +19,8 @@ const TaskItem = ({
     updateTodo,
     attachments,
     fetchTodos,
-    fileValidation
+    fileValidation,
+    showButtons
 }) => {
     const { hasRole } = useAuth();
     const [editTodo, setEditTodo] = useState(false);
@@ -237,28 +238,30 @@ const TaskItem = ({
                         
                     </div>
                 </div>
-                <div className="btn-group ms-3">
-                    <button className="btn btn-outline-success btn-sm" title="Complete" onClick={() => endEditTodo()}>
-                        <i className="bi bi-check-lg"></i>
-                    </button>
-                    {editTodo && editTodoId === id ? (
-                        <button className="btn btn-outline-primary btn-sm" title="Cancel" onClick={() => cancelEdit()}>
-                            <i className="bi bi-trash3"></i>
+                {showButtons && (
+                    <div className="btn-group ms-3">
+                        <button className="btn btn-outline-success btn-sm" title="Complete" onClick={() => endEditTodo()}>
+                            <i className="bi bi-check-lg"></i>
                         </button>
+                        {editTodo && editTodoId === id ? (
+                            <button className="btn btn-outline-primary btn-sm" title="Cancel" onClick={() => cancelEdit()}>
+                                <i className="bi bi-trash3"></i>
+                            </button>
+                            
+                        ) :
+                        (
+                            <button className="btn btn-outline-primary btn-sm" title="Edit" onClick={() => startEditTodo()}>
+                                <i className="bi bi-pencil"></i>
+                            </button>
+                        )}
                         
-                    ) :
-                    (
-                        <button className="btn btn-outline-primary btn-sm" title="Edit" onClick={() => startEditTodo()}>
-                            <i className="bi bi-pencil"></i>
-                        </button>
-                    )}
-                    
-                    {hasRole("ROLE_ADMIN") && (
-                    <button type="button" className="btn btn-outline-danger btn-sm" title="Delete" onClick={clickedRemoveTodo} >
-                        <i className="bi bi-trash"></i>
-                    </button>)}
-                    
-                </div>
+                        {hasRole("ROLE_ADMIN") && (
+                        <button type="button" className="btn btn-outline-danger btn-sm" title="Delete" onClick={clickedRemoveTodo} >
+                            <i className="bi bi-trash"></i>
+                        </button>)}
+                        
+                    </div>
+                )}
             </div>
         </div>                          
     );
